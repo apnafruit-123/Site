@@ -236,72 +236,85 @@ const slides = [
   }
 
   function onPointerDown(e: React.PointerEvent) {
-    if (!sliderRef.current) return;
-    const slider = sliderRef.current;
-    startXRef.current = e.clientX;
-    const style = window.getComputedStyle(slider);
-    // parse current translateX safely
-    const transform = style.transform === 'none' ? '' : style.transform;
-    let current = 0;
-    try {
-      const m = new DOMMatrix(transform || 'matrix(1,0,0,1,0,0)');
-      current = m.m41 || 0;
-    } catch {
-      const match = /matrix\(([-0-9., ]+)\)/.exec(transform || '');
-      if (match) {
-        const parts = match[1].split(',').map((p) => parseFloat(p.trim()));
-        current = parts.length >= 6 ? parts[4] : 0;
-      }
-    }
-    startTranslateRef.current = current;
-    isDraggingRef.current = true;
-    try {
-      (e.target as Element).setPointerCapture(e.pointerId);
-    } catch {}
-  }
+  if (!sliderRef.current) return;
+
+  isDraggingRef.current = true;
+  startXRef.current = e.clientX;
+
+  sliderRef.current.style.transition = 'none';
+
+  try {
+    (e.target as Element).setPointerCapture(e.pointerId);
+  } catch {}
+}
 
   function onPointerMoveSlide(e: React.PointerEvent) {
-    if (!isDraggingRef.current || !sliderRef.current) return;
-    const delta = e.clientX - startXRef.current;
-    const translate = startTranslateRef.current + delta;
-    sliderRef.current.style.transition = 'none';
-    sliderRef.current.style.transform = `translateX(${translate}px)`;
+  if (!isDraggingRef.current || !sliderRef.current) return;
+
+  const delta = e.clientX - startXRef.current;
+  const slideWidth = sliderRef.current.clientWidth;
+  const baseTranslate = -activeIndex * slideWidth;
+
+  sliderRef.current.style.transform = `translateX(${baseTranslate + delta}px)`;
+}
+
+
+ function onPointerUp(e: React.PointerEvent) {
+  if (!isDraggingRef.current || !sliderRef.current) return;
+
+  const delta = e.clientX - startXRef.current;
+  const slideWidth = sliderRef.current.clientWidth;
+  const threshold = slideWidth * 0.25;
+
+  if (delta < -threshold) {
+    setActiveIndex((p) => clampIndex(p + 1));
+  } else if (delta > threshold) {
+    setActiveIndex((p) => clampIndex(p - 1));
+  } else {
+    // snap back
+    sliderRef.current.style.transition =
+      'transform 400ms cubic-bezier(.22,.9,.37,1)';
+    sliderRef.current.style.transform = `translateX(${
+      -activeIndex * slideWidth
+    }px)`;
   }
 
-  function onPointerUp(e: React.PointerEvent) {
-    if (!sliderRef.current) return;
-    if (!isDraggingRef.current) return;
-    const delta = e.clientX - startXRef.current;
-    const width = window.innerWidth || ((sliderRef.current.clientWidth / slides.length) || 1);
-    // threshold: 20% of slide width
-    const threshold = width * 0.2;
-    if (delta < -threshold) {
-      setActiveIndex((p) => clampIndex(p + 1));
-    } else if (delta > threshold) {
-      setActiveIndex((p) => clampIndex(p - 1));
-    } else {
-      // snap back
-      setActiveIndex((p) => p);
-    }
-    // restore
-    isDraggingRef.current = false;
-    try {
-      (e.target as Element).releasePointerCapture(e.pointerId);
-    } catch {}
-  }
+  isDraggingRef.current = false;
+
+  try {
+    (e.target as Element).releasePointerCapture(e.pointerId);
+  } catch {}
+}
+
 
   // ensure mouse hover pause doesn't cancel autoplay while dragging
   // (mouseenter should only pause when not actively dragging)
+  useEffect(() => {
+  if (isDraggingRef.current) return;
+
+  const id = setInterval(() => {
+    setActiveIndex((p) => clampIndex(p));
+  }, 5000);
+
+  return () => clearInterval(id);
+}, [activeIndex]);
 
   // Ensure slider positions to active index when not dragging
-  useEffect(() => {
+useEffect(() => {
+    function handleResize() {
     const slider = sliderRef.current;
-    if (!slider || isDraggingRef.current) return;
-    const vw = window.innerWidth || (slider.clientWidth / slides.length) || 1;
-    const translate = -activeIndex * vw;
-    slider.style.transition = prefersReducedMotion.current ? 'none' : 'transform 800ms cubic-bezier(.22,.9,.37,1)';
-    slider.style.transform = `translateX(${translate}px)`;
-  }, [activeIndex, slides.length]);
+    if (!slider) return;
+
+    const slideWidth = slider.clientWidth;
+    slider.style.transition = 'none';
+    slider.style.transform = `translateX(${-activeIndex * slideWidth}px)`;
+  }
+
+  window.addEventListener('resize', handleResize);
+  handleResize();
+
+  return () => window.removeEventListener('resize', handleResize);
+}, [activeIndex]);
 
   // Keep slider sizing and translate accurate on resize
   useEffect(() => {
