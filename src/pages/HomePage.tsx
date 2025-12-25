@@ -580,7 +580,7 @@ const slides = [
             Our Products
           </h2>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
             {PRODUCTS.map((product, index) => (
               <div key={product.id} style={{ animationDelay: `${index * 0.1}s` }}>
                 <ProductCard product={product} />
