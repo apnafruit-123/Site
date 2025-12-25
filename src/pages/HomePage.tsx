@@ -344,11 +344,6 @@ const slides = [
             onPointerMove={(e) => handlePointerMove(e)}
             style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}
           >
-            {/* Announcement bar */}
-            <div className="absolute top-3 sm:top-4 left-1/2 -translate-x-1/2 bg-yellow-soft/90 backdrop-blur-sm text-brand-deep rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium shadow-sm z-20">
-              Fresh Fruit Sale Started — Seasonal Fruits Now Available
-            </div>
-
             {/* Horizontal swipeable slider — editorial white canvas, accent shape morphs */}
             <div className="relative w-full min-h-screen md:h-screen">
               {/* shared accent shape that morphs between slides */}
@@ -585,7 +580,7 @@ const slides = [
             Our Products
           </h2>
 
-          <div className="grid grid-cols-4 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
             {PRODUCTS.map((product, index) => (
               <div key={product.id} style={{ animationDelay: `${index * 0.1}s` }}>
                 <ProductCard product={product} />
