@@ -138,25 +138,25 @@ export default function HomePage({ onNavigate }: HomePageProps) {
 
 const slides = [
   {
-    key: 'mixed-box',
-    kicker: 'Fresh Fruit Boxes',
-    title: 'Handpicked fruit boxes for everyday freshness',
+    key: 'sankranti-offers',
+    kicker: 'Sankranti Offers',
+    title: 'Sankranti offers are available',
     subtitle:
-      'Seasonal fruits carefully selected, packed, and delivered fresh — perfect for daily nutrition and gifting.',
-    cta: 'Explore Fruit Boxes',
-    image:
-      'h1.png',
+      'Celebrate Sankranti with special seasonal offers and curated fruit boxes — limited time savings.',
+    cta: 'View Offers',
+    action: 'products',
+    image: 'h1b.png',
     fruits: [],
   },
   {
-    key: 'seasonal-offers',
-    kicker: 'Seasonal Combos',
-    title: 'Curated fruit box offers for every season',
+    key: 'franchise',
+    kicker: 'Franchise',
+    title: 'Franchise available',
     subtitle:
-      'Special seasonal fruit combinations and value packs — enjoy freshness with added savings.',
-    cta: 'View Offers',
-    image:
-      'h2.png',
+      'Join our growing family — franchise opportunities available. Partner with us to bring fresh fruit to your community.',
+    cta: 'Franchise',
+    action: 'franchise',
+    image: 'h2.png',
     fruits: [],
   },
   {
@@ -165,7 +165,7 @@ const slides = [
     title: 'Cold-pressed fruit juices, bottled naturally',
     subtitle:
       'Pure fruit juices made fresh — no preservatives, no added sugar, just natural taste.',
-    cta: 'Shop Juices',
+    cta: 'Explore',
     image:
       'h3.png',
     fruits: [],
@@ -176,7 +176,7 @@ const slides = [
     title: 'Naturally dried fruits & fruit powders',
     subtitle:
       'Premium dried fruits and fruit powders — perfect for snacks, smoothies, and daily wellness.',
-    cta: 'Browse Dried Fruits',
+    cta: 'Explore',
     image:
       'h4.png',
     fruits: [],
@@ -196,12 +196,12 @@ const slides = [
   // Autoplay (5s) with reduced-motion support
   const prefersReducedMotion = useRef(false);
   useEffect(() => {
-  const interval = setInterval(() => {
-    setActiveIndex((prev) => (prev + 1) % slides.length);
-  }, 5000);
-
-  return () => clearInterval(interval);
-}, [slides.length]);
+    try {
+      prefersReducedMotion.current = typeof window !== 'undefined' &&
+        window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {}
+  }, []);
 
 
   // Carousel navigation via state setters
@@ -228,6 +228,32 @@ const slides = [
   const startXRef = useRef(0);
   const startTranslateRef = useRef(0);
   const isDraggingRef = useRef(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const resumeTimeoutRef = useRef<number | null>(null);
+
+  function scheduleResume(delay = 2000) {
+    try {
+      if (resumeTimeoutRef.current) {
+        clearTimeout(resumeTimeoutRef.current);
+      }
+      resumeTimeoutRef.current = window.setTimeout(() => {
+        setIsPaused(false);
+        resumeTimeoutRef.current = null;
+      }, delay);
+    } catch {
+      // ignore in non-browser env
+    }
+  }
+
+  // Autoplay: advance when not paused and not dragging
+  useEffect(() => {
+    if (prefersReducedMotion.current) return;
+    const id = setInterval(() => {
+      if (isPaused || isDraggingRef.current) return;
+      setActiveIndex((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(id);
+  }, [isPaused, slides.length]);
 
   function clampIndex(i: number) {
     if (i < 0) return slides.length - 1;
@@ -237,9 +263,23 @@ const slides = [
 
   function onPointerDown(e: React.PointerEvent) {
   if (!sliderRef.current) return;
-
+  // clear any pending resume and mark dragging
+  if (resumeTimeoutRef.current) {
+    clearTimeout(resumeTimeoutRef.current);
+    resumeTimeoutRef.current = null;
+  }
   isDraggingRef.current = true;
+  setIsPaused(true);
   startXRef.current = e.clientX;
+
+  // compute start translate based on current activeIndex and slide width
+  try {
+    const totalWidth = sliderRef.current.clientWidth;
+    const slideWidth = totalWidth / Math.max(1, slides.length);
+    startTranslateRef.current = -activeIndex * slideWidth;
+  } catch {
+    startTranslateRef.current = 0;
+  }
 
   sliderRef.current.style.transition = 'none';
 
@@ -252,8 +292,9 @@ const slides = [
   if (!isDraggingRef.current || !sliderRef.current) return;
 
   const delta = e.clientX - startXRef.current;
-  const slideWidth = sliderRef.current.clientWidth;
-  const baseTranslate = -activeIndex * slideWidth;
+  const totalWidth = sliderRef.current.clientWidth;
+  const slideWidth = totalWidth / Math.max(1, slides.length);
+  const baseTranslate = -activeIndex * slideWidth + startTranslateRef.current;
 
   sliderRef.current.style.transform = `translateX(${baseTranslate + delta}px)`;
 }
@@ -263,7 +304,8 @@ const slides = [
   if (!isDraggingRef.current || !sliderRef.current) return;
 
   const delta = e.clientX - startXRef.current;
-  const slideWidth = sliderRef.current.clientWidth;
+  const totalWidth = sliderRef.current.clientWidth;
+  const slideWidth = totalWidth / Math.max(1, slides.length);
   const threshold = slideWidth * 0.25;
 
   if (delta < -threshold) {
@@ -272,14 +314,13 @@ const slides = [
     setActiveIndex((p) => clampIndex(p - 1));
   } else {
     // snap back
-    sliderRef.current.style.transition =
-      'transform 400ms cubic-bezier(.22,.9,.37,1)';
-    sliderRef.current.style.transform = `translateX(${
-      -activeIndex * slideWidth
-    }px)`;
+    sliderRef.current.style.transition = 'transform 400ms cubic-bezier(.22,.9,.37,1)';
+    sliderRef.current.style.transform = `translateX(${-activeIndex * slideWidth}px)`;
   }
 
   isDraggingRef.current = false;
+  // resume autoplay after short delay
+  scheduleResume(2000);
 
   try {
     (e.target as Element).releasePointerCapture(e.pointerId);
@@ -287,17 +328,7 @@ const slides = [
 }
 
 
-  // ensure mouse hover pause doesn't cancel autoplay while dragging
-  // (mouseenter should only pause when not actively dragging)
-  useEffect(() => {
-  if (isDraggingRef.current) return;
-
-  const id = setInterval(() => {
-    setActiveIndex((p) => clampIndex(p));
-  }, 5000);
-
-  return () => clearInterval(id);
-}, [activeIndex]);
+  
 
   // Ensure slider positions to active index when not dragging
 useEffect(() => {
@@ -305,9 +336,10 @@ useEffect(() => {
     const slider = sliderRef.current;
     if (!slider) return;
 
-    const slideWidth = slider.clientWidth;
-    slider.style.transition = 'none';
-    slider.style.transform = `translateX(${-activeIndex * slideWidth}px)`;
+  const totalWidth = slider.clientWidth;
+  const slideWidth = totalWidth / Math.max(1, slides.length);
+  slider.style.transition = 'none';
+  slider.style.transform = `translateX(${-activeIndex * slideWidth}px)`;
   }
 
   window.addEventListener('resize', handleResize);
@@ -315,6 +347,16 @@ useEffect(() => {
 
   return () => window.removeEventListener('resize', handleResize);
 }, [activeIndex]);
+
+  // cleanup resume timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (resumeTimeoutRef.current) {
+        clearTimeout(resumeTimeoutRef.current);
+        resumeTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Keep slider sizing and translate accurate on resize
   useEffect(() => {
@@ -353,7 +395,7 @@ useEffect(() => {
             id="carousel"
             className="relative overflow-hidden rounded-xl sm:rounded-2xl"
             onMouseEnter={() => { if (!isDraggingRef.current) setIsPaused(true); }}
-            onMouseLeave={() => setIsPaused(false)}
+            onMouseLeave={() => { scheduleResume(2000); }}
             onPointerMove={(e) => handlePointerMove(e)}
             style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}
           >
@@ -378,6 +420,7 @@ useEffect(() => {
                   onPointerMove={onPointerMoveSlide}
                   onPointerUp={onPointerUp}
                   onPointerCancel={onPointerUp}
+                  style={{ touchAction: 'pan-y' }}
                 >
                   {slides.map((s) => (
                     <div key={s.key} className="flex-shrink-0 w-screen h-full">
@@ -393,10 +436,16 @@ useEffect(() => {
 
                           <div className="flex items-center justify-center md:justify-start gap-2 sm:gap-3 flex-wrap">
                             <button
-                              onClick={() => scrollToProducts()}
+                              onClick={() => {
+                                if (s.action === 'franchise') {
+                                  onNavigate('franchise');
+                                } else {
+                                  scrollToProducts();
+                                }
+                              }}
                               className="bg-brand-primary text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-full font-semibold transition-transform duration-220 ease-in-out transform hover:-translate-y-0.5 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 text-xs sm:text-sm min-h-[44px] flex items-center justify-center"
                             >
-                              Explore Products
+                              {s.cta || 'Explore Products'}
                             </button>
                           </div>
                         </div>
@@ -429,6 +478,8 @@ useEffect(() => {
               <button
                 aria-label="Previous slide"
                 onClick={() => {
+                  setIsPaused(true);
+                  scheduleResume(2000);
                   const newIdx = (activeIndex - 1 + slides.length) % slides.length;
                   setActiveIndex(newIdx);
                   const slider = sliderRef.current;
@@ -447,6 +498,8 @@ useEffect(() => {
               <button
                 aria-label="Next slide"
                 onClick={() => {
+                  setIsPaused(true);
+                  scheduleResume(2000);
                   const newIdx = (activeIndex + 1) % slides.length;
                   setActiveIndex(newIdx);
                   const slider = sliderRef.current;
@@ -469,6 +522,8 @@ useEffect(() => {
                     key={idx}
                     aria-label={`Slide ${idx + 1}`}
                     onClick={() => {
+                      setIsPaused(true);
+                      scheduleResume(2000);
                       setActiveIndex(idx);
                       // force immediate transform for snappy response
                       const slider = sliderRef.current;

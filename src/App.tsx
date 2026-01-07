@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import CartPage from './pages/CartPage';
+import FranchisePage from './pages/FranchisePage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -44,6 +45,8 @@ function App() {
         return <HomePage onNavigate={setCurrentPage} />;
       case 'about':
         return <AboutPage />;
+      case 'franchise':
+        return <FranchisePage onNavigate={setCurrentPage} />;
       case 'contact':
         return <ContactPage />;
       case 'cart':

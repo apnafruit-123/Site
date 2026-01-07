@@ -32,6 +32,9 @@ export default function Footer({ onNavigate }: FooterProps) {
                 <li>
                 <button onClick={() => go('about')} className="hover:text-fruit-yellow transition-colors duration-300 inline-block min-h-[44px] flex items-center">About Us</button>
               </li>
+                <li>
+                  <button onClick={() => go('franchise')} className="hover:text-fruit-yellow transition-colors duration-300 inline-block min-h-[44px] flex items-center">Franchise</button>
+                </li>
               <li>
                 <button onClick={() => go('contact')} className="hover:text-fruit-yellow transition-colors duration-300 inline-block min-h-[44px] flex items-center">Contact Us</button>
               </li>

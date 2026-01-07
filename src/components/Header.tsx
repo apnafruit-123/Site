@@ -64,6 +64,16 @@ export default function Header({ currentPage, onNavigate }: HeaderProps) {
             >
               Contact Us
             </button>
+            <button
+              onClick={() => handleNavigate('franchise')}
+              className={`text-sm font-medium transition-all duration-300 tracking-luxury min-h-[44px] px-2 ${
+                currentPage === 'franchise'
+                  ? 'text-brand-primary font-semibold border-b-2 border-fruit-yellow'
+                  : 'text-brand-primary hover:text-brand-soft'
+              }`}
+            >
+              Franchise
+            </button>
             
             <button
               onClick={() => handleNavigate('cart')}
@@ -138,6 +148,16 @@ export default function Header({ currentPage, onNavigate }: HeaderProps) {
                 }`}
               >
                 Contact Us
+              </button>
+              <button
+                onClick={() => handleNavigate('franchise')}
+                className={`text-left py-3 px-4 rounded-lg transition-all duration-300 tracking-luxury min-h-[44px] ${
+                  currentPage === 'franchise'
+                    ? 'bg-card-hover text-brand-primary font-semibold'
+                    : 'text-brand-primary hover:bg-card-hover/50'
+                }`}
+              >
+                Franchise
               </button>
               
             </div>
