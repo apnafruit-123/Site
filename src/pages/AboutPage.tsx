@@ -101,15 +101,26 @@ export default function AboutPage() {
               Today, Apna Fruit Box serves households who want better access to fresh produce without the
               fuss. We're proud to deliver consistently and to make fruit a simple, delightful part of daily life.
             </p>
-            <p className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-             Gaurav soni 
-Co-Founder of Apna Fruit Box, where he leads brand marketing and responsible for shaping the brand’s identity and representing Apna Fruit Box across platforms, ensuring strong customer trust and consistent brand growth.
-            </p>
-            <p className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              Siddharth Palleti
+              <div className="card-premium p-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                <div className="flex flex-col md:flex-row items-center gap-4">
+                  <img src="/ad.jpeg" alt="Siddharth Palleti" className="w-28 h-28 rounded-full object-cover shadow-md flex-shrink-0" />
+                  <div className="text-text-gray text-sm sm:text-base">
+                    <h3 className="font-display font-semibold text-brand-primary">Siddharth Palleti</h3>
+                    <p className="mt-2">Founder with a passion for health, entrepreneurship, and community well-being. From Chhattisgarh, Siddharth identified the gap between farm produce and consumers and built Apna Fruit Box to bridge that gap with quality and purpose.</p>
+                  </div>
+                </div>
+              </div>
 
-Founder with a passion for health, entrepreneurship, and community well-being. From Chhattisgarh, Siddharth identified the gap between farm produce and consumers and built Apna Fruit Box to bridge that gap with quality and purpose.
-            </p>
+              <div className="card-premium p-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                <div className="flex flex-col md:flex-row-reverse items-center gap-4">
+                  <img src="/ad.jpeg" alt="Gaurav Soni" className="w-28 h-28 rounded-full object-cover shadow-md flex-shrink-0" />
+                  <div className="text-text-gray text-sm sm:text-base">
+                    <h3 className="font-display font-semibold text-brand-primary">Gaurav Soni</h3>
+                    <p className="mt-2">Co-Founder of Apna Fruit Box, where he leads brand marketing and is responsible for shaping the brand’s identity and representing Apna Fruit Box across platforms, ensuring strong customer trust and consistent brand growth.</p>
+                  </div>
+                </div>
+              </div>
+
           </div>
         </div>
       </section>

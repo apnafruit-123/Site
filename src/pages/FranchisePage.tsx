@@ -7,7 +7,7 @@ interface FranchisePageProps {
 export default function FranchisePage({ onNavigate }: FranchisePageProps) {
   const phone = '+91 9826820824';
   const instagram = '@apnafruitbox';
-  const email = 'fruitboxbhilai@gmail.com';
+  const email = 'apnafruitbox@gmail.com';
 
   return (
     <div className="min-h-screen bg-white text-slate-800">
@@ -82,7 +82,7 @@ export default function FranchisePage({ onNavigate }: FranchisePageProps) {
         {/* FOUNDER */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center bg-slate-50 rounded-2xl p-6">
           <div className="flex items-center justify-center">
-            <div className="w-40 h-40 rounded-full overflow-hidden bg-cover bg-center shadow-md" style={{ backgroundImage: "url('/w4.jpg')" }} aria-hidden />
+            <div className="w-40 h-40 rounded-full overflow-hidden bg-cover bg-center shadow-md" style={{ backgroundImage: "url('/ad.jpeg')" }} aria-hidden />
           </div>
           <div className="lg:col-span-2">
             <h3 className="text-2xl font-semibold mb-2">Siddharth Palleti</h3>
