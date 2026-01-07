@@ -101,6 +101,15 @@ export default function AboutPage() {
               Today, Apna Fruit Box serves households who want better access to fresh produce without the
               fuss. We're proud to deliver consistently and to make fruit a simple, delightful part of daily life.
             </p>
+            <p className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+             Gaurav soni 
+Co-Founder of Apna Fruit Box, where he leads brand marketing and responsible for shaping the brand’s identity and representing Apna Fruit Box across platforms, ensuring strong customer trust and consistent brand growth.
+            </p>
+            <p className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              Siddharth Palleti
+
+Founder with a passion for health, entrepreneurship, and community well-being. From Chhattisgarh, Siddharth identified the gap between farm produce and consumers and built Apna Fruit Box to bridge that gap with quality and purpose.
+            </p>
           </div>
         </div>
       </section>

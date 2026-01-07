@@ -4,7 +4,7 @@ Repository path: d:/websites/Apna fruit/deploy
 Generated: 2025-12-23
 
 Pages
-- HomePage (`src/pages/HomePage.tsx`): Full-viewport cinematic hero (5 slides), autoplay 5s, swipe/drag support, dots-only pagination + chevrons, per-slide side artwork/images, "Explore Products" button on each slide (scrolls to #products), "Why Choose Fruite Box" section, Products grid (`#products`), floating cart CTA, and a CTA banner section near the bottom.
+- HomePage (`src/pages/HomePage.tsx`): Full-viewport cinematic hero (5 slides), autoplay 5s, swipe/drag support, dots-only pagination + chevrons, per-slide side artwork/images, "Explore Products" button on each slide (scrolls to #products), "Why Choose Apna Fruit Box" section, Products grid (`#products`), floating cart CTA, and a CTA banner section near the bottom.
 - AboutPage (`src/pages/AboutPage.tsx`): Brand story, values, and a community CTA. Hero banner image now references `/banners/about-hero.jpg`.
 - ContactPage (`src/pages/ContactPage.tsx`): Phone, email, address, business hours, WhatsApp CTA and contact cards. Uses updated contact details for Apna Fruit Box.
 - CartPage (`src/pages/CartPage.tsx`): Cart UI, checkout modal, sends order text to WhatsApp (uses the configured WhatsApp number), product list and quantity controls.
@@ -46,7 +46,7 @@ Color Theory (intent & usage)
 
 Assets & Images (paths referenced)
 - Hero slides: `/s3.jpg`, `/s4.jpg`, `/s5.jpg`, `/s8.jpg`, `/s9.jpg`.
-- Why-choose gallery: `/w3.jpg`, `/w2.jpg`, `/w1.jpg`, `/w4.jpg`.
+- Why-choose gallery: `/w3.jpg`, `/w2.jpeg`, `/w1.jpg`, `/w4.jpg`.
 - New banner suggestions: `/banners/cta-hero.jpg`, `/banners/about-hero.jpg` (place under `public/banners/`).
 - Logo: `/logo.svg`, `/logov2.svg`.
 

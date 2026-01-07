@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin, Instagram, Facebook } from 'lucide-react';
 
 interface FooterProps {
   onNavigate?: (page: string) => void;
@@ -21,6 +21,14 @@ export default function Footer({ onNavigate }: FooterProps) {
               <p className="text-sm sm:text-base font-bold font-poppins leading-relaxed text-link-light">
               Fresh, seasonal fruit boxes — thoughtfully packed and delivered to your door.
             </p>
+            <div className="mt-4 flex items-center gap-3">
+              <a href="https://www.instagram.com/apnafruitbox?igsh=MXQwNmV4Z25iOHZnNQ==" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-link-light hover:text-fruit-yellow transition-colors">
+                <Instagram className="w-5 h-5 sm:w-6 sm:h-6" />
+              </a>
+              <a href="https://www.facebook.com/share/1AKGNENZ9A/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-link-light hover:text-fruit-yellow transition-colors">
+                <Facebook className="w-5 h-5 sm:w-6 sm:h-6" />
+              </a>
+            </div>
           </div>
 
           <div>

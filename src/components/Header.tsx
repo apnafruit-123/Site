@@ -28,7 +28,7 @@ export default function Header({ currentPage, onNavigate }: HeaderProps) {
             <img src="/logo.svg" alt="Logo" className="w-12 h-12 sm:w-12 sm:h-12 transition-transform duration-300 group-hover:rotate-12" />
             <div className="flex flex-col">
               <span className="text-lg sm:text-2xl font-display font-urbanist font-bold text-brand-primary tracking-luxury">Apna fruit box</span>
-              <span className="text-xs text-text-gray font-poppins font-semibold hidden sm:block">Freshness you can see and taste</span>
+              <span className="text-xs text-text-gray font-poppins font-semibold hidden sm:block">It's Natural</span>
             </div>
           </div>
 

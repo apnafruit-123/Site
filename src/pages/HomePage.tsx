@@ -556,7 +556,7 @@ useEffect(() => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
             <div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-archivo font-bold mb-3 tracking-luxury text-black">
-                Why Choose Fruite Box
+                Why Choose Apna Fruit Box
               </h2>
               <p className="text-slate-700 font-manrope mb-6 max-w-prose">
                 We curate seasonal fruit boxes with quiet care — focused on freshness, provenance, and an effortless experience. Small rituals, big flavor.
@@ -612,7 +612,7 @@ useEffect(() => {
                   <img src="/w3.jpg" alt="Fruit box 1" className="w-full h-44 object-cover" />
                 </div>
                 <div className="rounded-2xl overflow-hidden shadow-lg">
-                  <img src="/w2.jpg" alt="Fruit box 2" className="w-full h-44 object-cover" />
+                  <img src="/w2.jpeg" alt="Fruit box 2" className="w-full h-44 object-cover" />
                 </div>
                 <div className="rounded-2xl overflow-hidden shadow-lg col-span-2">
                   <img src="/w1.jpg" alt="Fruit box 3" className="w-full h-56 object-cover" />

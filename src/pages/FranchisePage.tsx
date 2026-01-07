@@ -5,8 +5,8 @@ interface FranchisePageProps {
 }
 
 export default function FranchisePage({ onNavigate }: FranchisePageProps) {
-  const phone = '+917000596302';
-  const instagram = '@fruit.box.bhilai';
+  const phone = '+91 9826820824';
+  const instagram = '@apnafruitbox';
   const email = 'fruitboxbhilai@gmail.com';
 
   return (
@@ -76,7 +76,7 @@ export default function FranchisePage({ onNavigate }: FranchisePageProps) {
             <p className="text-base text-slate-700 leading-relaxed mb-4">Apna Fruit Box is Chhattisgarh’s premier farm-to-doorstep fruit delivery service. We focus on freshness, nutrition, additive-free fruits, and easy access to healthy living — wellness is just a box away.</p>
           </div>
 
-          <div className="rounded-xl overflow-hidden shadow-sm bg-cover bg-center h-64" style={{ backgroundImage: "url('/w2.jpg')" }} aria-hidden />
+          <div className="rounded-xl overflow-hidden shadow-sm bg-cover bg-center h-64" style={{ backgroundImage: "url('/w2.jpeg')" }} aria-hidden />
         </section>
 
         {/* FOUNDER */}
@@ -189,7 +189,7 @@ export default function FranchisePage({ onNavigate }: FranchisePageProps) {
 
           {/* Locations + contact (above download) */}
           <div className="mt-8 bg-slate-50 rounded-xl p-6 shadow-sm">
-            <h4 className="text-lg font-semibold mb-3">Franchise available in</h4>
+            <h4 className="text-lg font-semibold mb-3">Our services available in</h4>
             <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
               <li>Zirakpur (Punjab)</li>
               <li>Chandigarh (Punjab)</li>
