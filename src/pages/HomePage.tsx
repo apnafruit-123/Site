@@ -284,10 +284,13 @@ const slides = [
     if (animate && isAnimatingRef.current) return; // ignore while animating
     isAnimatingRef.current = animate;
 
-    const vw = window.innerWidth || 1;
+    // compute slide width from actual slide element
+    const first = (slider.children && slider.children[0]) as HTMLElement | undefined;
+    const slideWidth = first?.clientWidth || Math.max(1, slider.clientWidth / (slides.length + 2));
+
     slider.style.transition = animate ? (prefersReducedMotion.current ? 'none' : 'transform 600ms cubic-bezier(.22,.9,.37,1)') : 'none';
-    // apply transform
-    slider.style.transform = `translateX(${ -n * vw }px)`;
+    // apply transform using measured slide width
+    slider.style.transform = `translateX(${ -n * slideWidth }px)`;
 
     visualIndexRef.current = n;
     setActiveIndex(((n - 1) % slides.length + slides.length) % slides.length);
@@ -349,9 +352,10 @@ useEffect(() => {
     const slider = sliderRef.current;
     if (!slider) return;
     const s = slider as HTMLDivElement;
-    const vw = window.innerWidth || 1;
+    const first = (s.children && s.children[0]) as HTMLElement | undefined;
+    const slideWidth = first?.clientWidth || Math.max(1, s.clientWidth / (slides.length + 2));
     s.style.transition = 'none';
-    s.style.transform = `translateX(${ -1 * vw }px)`;
+    s.style.transform = `translateX(${ -1 * slideWidth }px)`;
     visualIndexRef.current = 1;
     setActiveIndex(0);
   }, []);
@@ -369,8 +373,9 @@ useEffect(() => {
           // jump to real first
           const s = slider as HTMLDivElement;
           s.style.transition = 'none';
-          const vw = window.innerWidth || 1;
-          s.style.transform = `translateX(${ -1 * vw }px)`;
+          const first = (s.children && s.children[0]) as HTMLElement | undefined;
+          const slideWidth = first?.clientWidth || Math.max(1, s.clientWidth / (slides.length + 2));
+          s.style.transform = `translateX(${ -1 * slideWidth }px)`;
           visualIndexRef.current = 1;
           setActiveIndex(0);
           return;
@@ -380,8 +385,9 @@ useEffect(() => {
         if (visualIndexRef.current === 0) {
           const s = slider as HTMLDivElement;
           s.style.transition = 'none';
-          const vw = window.innerWidth || 1;
-          s.style.transform = `translateX(${ -slides.length * vw }px)`;
+          const first = (s.children && s.children[0]) as HTMLElement | undefined;
+          const slideWidth = first?.clientWidth || Math.max(1, s.clientWidth / (slides.length + 2));
+          s.style.transform = `translateX(${ -slides.length * slideWidth }px)`;
           visualIndexRef.current = slides.length;
           setActiveIndex(slides.length - 1);
         }
