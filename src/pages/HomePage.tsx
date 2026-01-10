@@ -282,7 +282,8 @@ const slides = [
     }
 
     if (animate && isAnimatingRef.current) return; // ignore while animating
-    isAnimatingRef.current = animate;
+    // only mark animating when a CSS transition will actually run
+    isAnimatingRef.current = Boolean(animate && !prefersReducedMotion.current);
 
     // compute slide width from actual slide element
     const first = (slider.children && slider.children[0]) as HTMLElement | undefined;
