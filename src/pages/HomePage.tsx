@@ -136,6 +136,9 @@ export default function HomePage({ onNavigate }: HomePageProps) {
   // Carousel state and behavior
   const [activeIndex, setActiveIndex] = useState(0);
 
+  // visual index handles cloned slides for seamless looping (1..n)
+  const visualIndexRef = useRef(1);
+
 const slides = [
   {
     key: 'sankranti-offers',
@@ -193,6 +196,8 @@ const slides = [
     fruits: [],
   },
 ];
+  // extended slides: clone last at start and first at end for seamless loop
+  const extendedSlides = [slides[slides.length - 1], ...slides, slides[0]];
   // Autoplay (5s) with reduced-motion support
   const prefersReducedMotion = useRef(false);
   useEffect(() => {
@@ -228,6 +233,7 @@ const slides = [
   const startXRef = useRef(0);
   const startTranslateRef = useRef(0);
   const isDraggingRef = useRef(false);
+  const isAnimatingRef = useRef(false);
   const [isPaused, setIsPaused] = useState(false);
   const resumeTimeoutRef = useRef<number | null>(null);
 
@@ -245,21 +251,46 @@ const slides = [
     }
   }
 
-  // Autoplay: advance when not paused and not dragging
   useEffect(() => {
-    if (prefersReducedMotion.current) return;
-    const id = setInterval(() => {
-      if (isPaused || isDraggingRef.current) return;
-      setActiveIndex((prev) => (prev + 1) % slides.length);
-    }, 5000);
-    return () => clearInterval(id);
-  }, [isPaused, slides.length]);
+    const timer = setInterval(() => {
+      if (prefersReducedMotion.current) return;
+      if (isPaused || isDraggingRef.current || isAnimatingRef.current) return;
+      // advance visual index and logical active index
+      goToVisual(visualIndexRef.current + 1, true);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
 
-  function clampIndex(i: number) {
-    if (i < 0) return slides.length - 1;
-    if (i >= slides.length) return 0;
-    return i;
+  // clampIndex removed — using visual index helpers now
+
+  // helper to jump to a visual slide index (accounts for clones)
+  function goToVisual(n: number, animate = true) {
+    const slider = sliderRef.current;
+    // clamp to allowed visual range [0 .. slides.length + 1]
+    const maxVisual = slides.length + 1;
+    if (n > maxVisual) n = maxVisual;
+    if (n < 0) n = 0;
+
+    if (!slider) {
+      visualIndexRef.current = n;
+      setActiveIndex(((n - 1) % slides.length + slides.length) % slides.length);
+      return;
+    }
+
+    if (animate && isAnimatingRef.current) return; // ignore while animating
+    isAnimatingRef.current = animate;
+
+    const vw = window.innerWidth || 1;
+    slider.style.transition = animate ? (prefersReducedMotion.current ? 'none' : 'transform 600ms cubic-bezier(.22,.9,.37,1)') : 'none';
+    // apply transform
+    slider.style.transform = `translateX(${ -n * vw }px)`;
+
+    visualIndexRef.current = n;
+    setActiveIndex(((n - 1) % slides.length + slides.length) % slides.length);
   }
+
+  const nextSlide = () => goToVisual(visualIndexRef.current + 1, true);
+  const prevSlide = () => goToVisual(visualIndexRef.current - 1, true);
 
   function onPointerDown(e: React.PointerEvent) {
   if (!sliderRef.current) return;
@@ -272,11 +303,10 @@ const slides = [
   setIsPaused(true);
   startXRef.current = e.clientX;
 
-  // compute start translate based on current activeIndex and slide width
+  // compute start translate based on current visualIndex and slide width
   try {
-    const totalWidth = sliderRef.current.clientWidth;
-    const slideWidth = totalWidth / Math.max(1, slides.length);
-    startTranslateRef.current = -activeIndex * slideWidth;
+    const vw = window.innerWidth || 1;
+    startTranslateRef.current = -visualIndexRef.current * vw;
   } catch {
     startTranslateRef.current = 0;
   }
@@ -292,9 +322,7 @@ const slides = [
   if (!isDraggingRef.current || !sliderRef.current) return;
 
   const delta = e.clientX - startXRef.current;
-  const totalWidth = sliderRef.current.clientWidth;
-  const slideWidth = totalWidth / Math.max(1, slides.length);
-  const baseTranslate = -activeIndex * slideWidth + startTranslateRef.current;
+  const baseTranslate = startTranslateRef.current;
 
   sliderRef.current.style.transform = `translateX(${baseTranslate + delta}px)`;
 }
@@ -304,22 +332,20 @@ const slides = [
   if (!isDraggingRef.current || !sliderRef.current) return;
 
   const delta = e.clientX - startXRef.current;
-  const totalWidth = sliderRef.current.clientWidth;
-  const slideWidth = totalWidth / Math.max(1, slides.length);
-  const threshold = slideWidth * 0.25;
+  const vw = window.innerWidth || 1;
+  const threshold = vw * 0.25;
 
   if (delta < -threshold) {
-    setActiveIndex((p) => clampIndex(p + 1));
+    goToVisual(visualIndexRef.current + 1, true);
   } else if (delta > threshold) {
-    setActiveIndex((p) => clampIndex(p - 1));
+    goToVisual(visualIndexRef.current - 1, true);
   } else {
-    // snap back
-    sliderRef.current.style.transition = 'transform 400ms cubic-bezier(.22,.9,.37,1)';
-    sliderRef.current.style.transform = `translateX(${-activeIndex * slideWidth}px)`;
+    // snap back to current visual
+    sliderRef.current.style.transition = prefersReducedMotion.current ? 'none' : 'transform 400ms cubic-bezier(.22,.9,.37,1)';
+    sliderRef.current.style.transform = `translateX(${ -visualIndexRef.current * vw }px)`;
   }
 
   isDraggingRef.current = false;
-  // resume autoplay after short delay
   scheduleResume(2000);
 
   try {
@@ -335,11 +361,9 @@ useEffect(() => {
     function handleResize() {
     const slider = sliderRef.current;
     if (!slider) return;
-
-  const totalWidth = slider.clientWidth;
-  const slideWidth = totalWidth / Math.max(1, slides.length);
-  slider.style.transition = 'none';
-  slider.style.transform = `translateX(${-activeIndex * slideWidth}px)`;
+    const vw = window.innerWidth || 1;
+    slider.style.transition = 'none';
+    slider.style.transform = `translateX(${-visualIndexRef.current * vw}px)`;
   }
 
   window.addEventListener('resize', handleResize);
@@ -364,8 +388,8 @@ useEffect(() => {
       const slider = sliderRef.current;
       if (!slider) return;
       // force recompute transform to align to viewport width
-      const vw = window.innerWidth || (slider.clientWidth / slides.length) || 1;
-      const translate = -activeIndex * vw;
+      const vw = window.innerWidth || 1;
+      const translate = -visualIndexRef.current * vw;
       slider.style.transition = prefersReducedMotion.current ? 'none' : 'transform 300ms linear';
       slider.style.transform = `translateX(${translate}px)`;
     }
@@ -374,6 +398,53 @@ useEffect(() => {
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, [activeIndex, slides.length]);
+
+  // ensure initial placement at visual index 1 (first real slide) so banner is always visible
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+    const s = slider as HTMLDivElement;
+    const vw = window.innerWidth || 1;
+    s.style.transition = 'none';
+    s.style.transform = `translateX(${ -1 * vw }px)`;
+    visualIndexRef.current = 1;
+    setActiveIndex(0);
+  }, []);
+
+  // handle transitionend to reset when hitting cloned slides (seamless loop)
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+      function onTransitionEnd(e: TransitionEvent) {
+        if (e && e.propertyName && e.propertyName !== 'transform') return;
+        isAnimatingRef.current = false;
+      // landed on cloned-first (visualIndex === slides.length + 1)
+        if (visualIndexRef.current === slides.length + 1) {
+          // jump to real first
+          const s = slider as HTMLDivElement;
+          s.style.transition = 'none';
+          const vw = window.innerWidth || 1;
+          s.style.transform = `translateX(${ -1 * vw }px)`;
+          visualIndexRef.current = 1;
+          setActiveIndex(0);
+          return;
+        }
+
+        // landed on cloned-last (visualIndex === 0)
+        if (visualIndexRef.current === 0) {
+          const s = slider as HTMLDivElement;
+          s.style.transition = 'none';
+          const vw = window.innerWidth || 1;
+          s.style.transform = `translateX(${ -slides.length * vw }px)`;
+          visualIndexRef.current = slides.length;
+          setActiveIndex(slides.length - 1);
+        }
+    }
+
+    slider.addEventListener('transitionend', onTransitionEnd);
+    return () => slider.removeEventListener('transitionend', onTransitionEnd);
+  }, [slides.length]);
   return (
     <div className="min-h-screen bg-white text-black">
       {/* Interactive Carousel Hero (5 slides) */}
@@ -422,8 +493,8 @@ useEffect(() => {
                   onPointerCancel={onPointerUp}
                   style={{ touchAction: 'pan-y' }}
                 >
-                  {slides.map((s) => (
-                    <div key={s.key} className="flex-shrink-0 w-screen h-full">
+                  {extendedSlides.map((s, idx) => (
+                    <div key={`${s.key}-${idx}`} className="flex-shrink-0 w-screen h-full">
                       <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 items-center h-full py-6 px-3 sm:px-4 md:py-12`}>
                         <div className="md:col-span-1 text-center md:text-left flex flex-col justify-center">
                           <p className="text-xs sm:text-sm font-bold font-urbanist uppercase tracking-wide mb-2 sm:mb-3 text-gray-500">
@@ -480,15 +551,7 @@ useEffect(() => {
                 onClick={() => {
                   setIsPaused(true);
                   scheduleResume(2000);
-                  const newIdx = (activeIndex - 1 + slides.length) % slides.length;
-                  setActiveIndex(newIdx);
-                  const slider = sliderRef.current;
-                  if (slider) {
-                    const vw = window.innerWidth || ((slider.clientWidth / slides.length) || 1);
-                    const translate = -newIdx * vw;
-                    slider.style.transition = prefersReducedMotion.current ? 'none' : 'transform 600ms cubic-bezier(.22,.9,.37,1)';
-                    slider.style.transform = `translateX(${translate}px)`;
-                  }
+                  prevSlide();
                 }}
                 className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 z-30 bg-white/90 hover:bg-white text-slate-800 rounded-full p-2 sm:p-3 shadow-md flex items-center justify-center focus:outline-none transition-all hover:scale-110 min-w-[44px] min-h-[44px]"
               >
@@ -500,15 +563,7 @@ useEffect(() => {
                 onClick={() => {
                   setIsPaused(true);
                   scheduleResume(2000);
-                  const newIdx = (activeIndex + 1) % slides.length;
-                  setActiveIndex(newIdx);
-                  const slider = sliderRef.current;
-                  if (slider) {
-                    const vw = window.innerWidth || ((slider.clientWidth / slides.length) || 1);
-                    const translate = -newIdx * vw;
-                    slider.style.transition = prefersReducedMotion.current ? 'none' : 'transform 600ms cubic-bezier(.22,.9,.37,1)';
-                    slider.style.transform = `translateX(${translate}px)`;
-                  }
+                  nextSlide();
                 }}
                 className="absolute bottom-4 sm:bottom-6 right-4 sm:right-6 z-30 bg-white/90 hover:bg-white text-slate-800 rounded-full p-2 sm:p-3 shadow-md flex items-center justify-center focus:outline-none transition-all hover:scale-110 min-w-[44px] min-h-[44px]"
               >
@@ -524,15 +579,7 @@ useEffect(() => {
                     onClick={() => {
                       setIsPaused(true);
                       scheduleResume(2000);
-                      setActiveIndex(idx);
-                      // force immediate transform for snappy response
-                      const slider = sliderRef.current;
-                      if (slider) {
-                        const vw = window.innerWidth || ((slider.clientWidth / slides.length) || 1);
-                        const translate = -idx * vw;
-                        slider.style.transition = prefersReducedMotion.current ? 'none' : 'transform 600ms cubic-bezier(.22,.9,.37,1)';
-                        slider.style.transform = `translateX(${translate}px)`;
-                      }
+                      goToVisual(idx + 1, true);
                     }}
                     className={`transition-all duration-350 ${
                       activeIndex === idx ? 'bg-slate-800 w-2 sm:w-3 h-2 sm:h-3 rounded-full' : 'bg-slate-400/40 w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full'
