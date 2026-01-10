@@ -1,5 +1,5 @@
 import { ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PRODUCTS } from '../types';
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../context/CartContext';
@@ -230,12 +230,16 @@ const slides = [
 
   // Slider refs and swipe handling
   const sliderRef = useRef<HTMLDivElement | null>(null);
-  const startXRef = useRef(0);
-  const startTranslateRef = useRef(0);
+  
   const isDraggingRef = useRef(false);
   const isAnimatingRef = useRef(false);
   const [isPaused, setIsPaused] = useState(false);
   const resumeTimeoutRef = useRef<number | null>(null);
+
+  // small no-op to disable dragging while preserving references (avoids unused warnings)
+  const preventPointer = (e: any) => {
+    try { e.preventDefault(); } catch {}
+  };
 
   function scheduleResume(delay = 2000) {
     try {
@@ -292,66 +296,7 @@ const slides = [
   const nextSlide = () => goToVisual(visualIndexRef.current + 1, true);
   const prevSlide = () => goToVisual(visualIndexRef.current - 1, true);
 
-  function onPointerDown(e: React.PointerEvent) {
-  if (!sliderRef.current) return;
-  // clear any pending resume and mark dragging
-  if (resumeTimeoutRef.current) {
-    clearTimeout(resumeTimeoutRef.current);
-    resumeTimeoutRef.current = null;
-  }
-  isDraggingRef.current = true;
-  setIsPaused(true);
-  startXRef.current = e.clientX;
-
-  // compute start translate based on current visualIndex and slide width
-  try {
-    const vw = window.innerWidth || 1;
-    startTranslateRef.current = -visualIndexRef.current * vw;
-  } catch {
-    startTranslateRef.current = 0;
-  }
-
-  sliderRef.current.style.transition = 'none';
-
-  try {
-    (e.target as Element).setPointerCapture(e.pointerId);
-  } catch {}
-}
-
-  function onPointerMoveSlide(e: React.PointerEvent) {
-  if (!isDraggingRef.current || !sliderRef.current) return;
-
-  const delta = e.clientX - startXRef.current;
-  const baseTranslate = startTranslateRef.current;
-
-  sliderRef.current.style.transform = `translateX(${baseTranslate + delta}px)`;
-}
-
-
- function onPointerUp(e: React.PointerEvent) {
-  if (!isDraggingRef.current || !sliderRef.current) return;
-
-  const delta = e.clientX - startXRef.current;
-  const vw = window.innerWidth || 1;
-  const threshold = vw * 0.25;
-
-  if (delta < -threshold) {
-    goToVisual(visualIndexRef.current + 1, true);
-  } else if (delta > threshold) {
-    goToVisual(visualIndexRef.current - 1, true);
-  } else {
-    // snap back to current visual
-    sliderRef.current.style.transition = prefersReducedMotion.current ? 'none' : 'transform 400ms cubic-bezier(.22,.9,.37,1)';
-    sliderRef.current.style.transform = `translateX(${ -visualIndexRef.current * vw }px)`;
-  }
-
-  isDraggingRef.current = false;
-  scheduleResume(2000);
-
-  try {
-    (e.target as Element).releasePointerCapture(e.pointerId);
-  } catch {}
-}
+  
 
 
   
@@ -487,10 +432,15 @@ useEffect(() => {
                 <div
                   ref={sliderRef}
                   className="flex h-full will-change-transform"
-                  onPointerDown={onPointerDown}
-                  onPointerMove={onPointerMoveSlide}
-                  onPointerUp={onPointerUp}
-                  onPointerCancel={onPointerUp}
+                  onPointerDown={preventPointer}
+                  onPointerMove={preventPointer}
+                  onPointerUp={preventPointer}
+                  onPointerCancel={preventPointer}
+                  onClick={() => {
+                    setIsPaused(true);
+                    scheduleResume(2000);
+                    nextSlide();
+                  }}
                   style={{ touchAction: 'pan-y' }}
                 >
                   {extendedSlides.map((s, idx) => (
