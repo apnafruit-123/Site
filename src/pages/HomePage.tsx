@@ -232,6 +232,7 @@ const slides = [
   const sliderRef = useRef<HTMLDivElement | null>(null);
   
   const isDraggingRef = useRef(false);
+  const touchStartXRef = useRef<number | null>(null);
   const isAnimatingRef = useRef(false);
   const [isPaused, setIsPaused] = useState(false);
   const resumeTimeoutRef = useRef<number | null>(null);
@@ -240,6 +241,32 @@ const slides = [
   const preventPointer = (e: any) => {
     try { e.preventDefault(); } catch {}
   };
+
+  function onSwipeStart(clientX: number) {
+    touchStartXRef.current = clientX;
+    isDraggingRef.current = true;
+    setIsPaused(true);
+    try { if (resumeTimeoutRef.current) { clearTimeout(resumeTimeoutRef.current); resumeTimeoutRef.current = null; } } catch {}
+  }
+
+  function onSwipeEnd(clientX?: number) {
+    const start = touchStartXRef.current;
+    isDraggingRef.current = false;
+    if (start == null || clientX == null) {
+      scheduleResume(2000);
+      touchStartXRef.current = null;
+      return;
+    }
+    const dx = clientX - start;
+    const threshold = 50; // px
+    if (dx > threshold) {
+      prevSlide();
+    } else if (dx < -threshold) {
+      nextSlide();
+    }
+    scheduleResume(2000);
+    touchStartXRef.current = null;
+  }
 
   function scheduleResume(delay = 2000) {
     try {
@@ -439,10 +466,12 @@ useEffect(() => {
                 <div
                   ref={sliderRef}
                   className="flex h-full will-change-transform"
-                  onPointerDown={preventPointer}
-                  onPointerMove={preventPointer}
-                  onPointerUp={preventPointer}
-                  onPointerCancel={preventPointer}
+                  onPointerDown={(e) => onSwipeStart(e.clientX)}
+                  onPointerUp={(e) => onSwipeEnd(e.clientX)}
+                  onPointerCancel={(e) => onSwipeEnd(e.clientX)}
+                  onTouchStart={(e) => onSwipeStart(e.touches[0].clientX)}
+                  onTouchEnd={(e) => onSwipeEnd(e.changedTouches?.[0]?.clientX)}
+                  onTouchCancel={(e) => onSwipeEnd(e.changedTouches?.[0]?.clientX)}
                   onClick={() => {
                     setIsPaused(true);
                     scheduleResume(2000);
