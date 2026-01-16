@@ -15,6 +15,7 @@
   
   body {
     @apply font-body text-text-gray bg-pure-white antialiased;
+    padding-top: 4rem; /* reserve space for fixed header (h-16) */
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -90,6 +91,20 @@
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+}
+
+/* Ensure anchor jumps account for the header height */
+html {
+  scroll-padding-top: 4rem; /* default header height (h-16) */
+}
+
+@media (min-width: 640px) {
+  html {
+    scroll-padding-top: 5rem; /* sm header height (h-20) */
+  }
+  body {
+    padding-top: 5rem; /* reserve space for fixed header at sm+ */
+  }
 }
 
 /* Custom scrollbar - green theme */
