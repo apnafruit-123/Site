@@ -1,5 +1,6 @@
 import { ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
 import { PRODUCTS } from '../types';
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../context/CartContext';
@@ -135,9 +136,9 @@ export default function HomePage({ onNavigate }: HomePageProps) {
 
   // Carousel state and behavior
   const [activeIndex, setActiveIndex] = useState(0);
+  // Embla carousel hook (provides emblaRef and emblaApi)
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'center', skipSnaps: false });
 
-  // visual index handles cloned slides for seamless looping (1..n)
-  const visualIndexRef = useRef(1);
 
 const slides = [
   {
@@ -228,45 +229,11 @@ const slides = [
     el.style.setProperty('--my', `${my}px`);
   }
 
-  // Slider refs and swipe handling
-  const sliderRef = useRef<HTMLDivElement | null>(null);
+  // Embla-based slider handling: provides smooth native-feel drag, snapping and loop
   
   const isDraggingRef = useRef(false);
-  const touchStartXRef = useRef<number | null>(null);
-  const isAnimatingRef = useRef(false);
   const [isPaused, setIsPaused] = useState(false);
   const resumeTimeoutRef = useRef<number | null>(null);
-
-  // small no-op to disable dragging while preserving references (avoids unused warnings)
-  const preventPointer = (e: any) => {
-    try { e.preventDefault(); } catch {}
-  };
-
-  function onSwipeStart(clientX: number) {
-    touchStartXRef.current = clientX;
-    isDraggingRef.current = true;
-    setIsPaused(true);
-    try { if (resumeTimeoutRef.current) { clearTimeout(resumeTimeoutRef.current); resumeTimeoutRef.current = null; } } catch {}
-  }
-
-  function onSwipeEnd(clientX?: number) {
-    const start = touchStartXRef.current;
-    isDraggingRef.current = false;
-    if (start == null || clientX == null) {
-      scheduleResume(2000);
-      touchStartXRef.current = null;
-      return;
-    }
-    const dx = clientX - start;
-    const threshold = 50; // px
-    if (dx > threshold) {
-      prevSlide();
-    } else if (dx < -threshold) {
-      nextSlide();
-    }
-    scheduleResume(2000);
-    touchStartXRef.current = null;
-  }
 
   function scheduleResume(delay = 2000) {
     try {
@@ -282,71 +249,56 @@ const slides = [
     }
   }
 
+  // Autoplay using the Embla API; runs every 7s when idle
   useEffect(() => {
-    const timer = setInterval(() => {
+    if (!emblaApi) return;
+    const tick = () => {
       if (prefersReducedMotion.current) return;
-      if (isPaused || isDraggingRef.current || isAnimatingRef.current) return;
-      // advance visual index and logical active index
-      goToVisual(visualIndexRef.current + 1, true);
-    }, 6000);
+      if (isPaused || isDraggingRef.current) return;
+      try { emblaApi.scrollNext(); } catch {}
+    };
+    const timer = window.setInterval(tick, 7000);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [emblaApi, isPaused]);
 
-  // clampIndex removed — using visual index helpers now
+  // Wire up Embla interaction events to pause/resume autoplay and update active index
+  useEffect(() => {
+    if (!emblaApi) return;
 
-  // helper to jump to a visual slide index (accounts for clones)
-  function goToVisual(n: number, animate = true) {
-    const slider = sliderRef.current;
-    // clamp to allowed visual range [0 .. slides.length + 1]
-    const maxVisual = slides.length + 1;
-    if (n > maxVisual) n = maxVisual;
-    if (n < 0) n = 0;
+    const onSelect = () => {
+      try {
+        const sel = emblaApi.selectedScrollSnap();
+        setActiveIndex(sel ?? 0);
+      } catch {
+        setActiveIndex(0);
+      }
+    };
 
-    if (!slider) {
-      visualIndexRef.current = n;
-      setActiveIndex(((n - 1) % slides.length + slides.length) % slides.length);
-      return;
-    }
+    const onDragStart = () => {
+      isDraggingRef.current = true;
+      setIsPaused(true);
+      try { if (resumeTimeoutRef.current) { clearTimeout(resumeTimeoutRef.current); resumeTimeoutRef.current = null; } } catch {}
+    };
 
-    if (animate && isAnimatingRef.current) return; // ignore while animating
-    // only mark animating when a CSS transition will actually run
-    isAnimatingRef.current = Boolean(animate && !prefersReducedMotion.current);
+    const onDragEnd = () => {
+      isDraggingRef.current = false;
+      scheduleResume(2000);
+    };
 
-    // compute slide width from actual slide element
-    const first = (slider.children && slider.children[0]) as HTMLElement | undefined;
-    const slideWidth = first?.clientWidth || Math.max(1, slider.clientWidth / (slides.length + 2));
+    emblaApi.on('select', onSelect);
+    emblaApi.on('pointerDown', onDragStart);
+    emblaApi.on('pointerUp', onDragEnd);
 
-    slider.style.transition = animate ? (prefersReducedMotion.current ? 'none' : 'transform 600ms cubic-bezier(.22,.9,.37,1)') : 'none';
-    // apply transform using measured slide width
-    slider.style.transform = `translateX(${ -n * slideWidth }px)`;
+    onSelect();
 
-    visualIndexRef.current = n;
-    setActiveIndex(((n - 1) % slides.length + slides.length) % slides.length);
-  }
-
-  const nextSlide = () => goToVisual(visualIndexRef.current + 1, true);
-  const prevSlide = () => goToVisual(visualIndexRef.current - 1, true);
-
-  
-
-
-  
-
-  // Ensure slider positions to active index when not dragging
-useEffect(() => {
-    function handleResize() {
-    const slider = sliderRef.current;
-    if (!slider) return;
-    const vw = window.innerWidth || 1;
-    slider.style.transition = 'none';
-    slider.style.transform = `translateX(${-visualIndexRef.current * vw}px)`;
-  }
-
-  window.addEventListener('resize', handleResize);
-  handleResize();
-
-  return () => window.removeEventListener('resize', handleResize);
-}, [activeIndex]);
+    return () => {
+      try {
+        emblaApi.off('select', onSelect);
+        emblaApi.off('pointerDown', onDragStart);
+        emblaApi.off('pointerUp', onDragEnd);
+      } catch {}
+    };
+  }, [emblaApi]);
 
   // cleanup resume timeout on unmount
   useEffect(() => {
@@ -358,72 +310,7 @@ useEffect(() => {
     };
   }, []);
 
-  // Keep slider sizing and translate accurate on resize
-  useEffect(() => {
-    function handleResize() {
-      const slider = sliderRef.current;
-      if (!slider) return;
-      // force recompute transform to align to viewport width
-      const vw = window.innerWidth || 1;
-      const translate = -visualIndexRef.current * vw;
-      slider.style.transition = prefersReducedMotion.current ? 'none' : 'transform 300ms linear';
-      slider.style.transform = `translateX(${translate}px)`;
-    }
-    window.addEventListener('resize', handleResize);
-    // initial call
-    handleResize();
-    return () => window.removeEventListener('resize', handleResize);
-  }, [activeIndex, slides.length]);
-
-  // ensure initial placement at visual index 1 (first real slide) so banner is always visible
-  useEffect(() => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-    const s = slider as HTMLDivElement;
-    const first = (s.children && s.children[0]) as HTMLElement | undefined;
-    const slideWidth = first?.clientWidth || Math.max(1, s.clientWidth / (slides.length + 2));
-    s.style.transition = 'none';
-    s.style.transform = `translateX(${ -1 * slideWidth }px)`;
-    visualIndexRef.current = 1;
-    setActiveIndex(0);
-  }, []);
-
-  // handle transitionend to reset when hitting cloned slides (seamless loop)
-  useEffect(() => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-
-      function onTransitionEnd(e: TransitionEvent) {
-        if (e && e.propertyName && e.propertyName !== 'transform') return;
-        isAnimatingRef.current = false;
-      // landed on cloned-first (visualIndex === slides.length + 1)
-        if (visualIndexRef.current === slides.length + 1) {
-          // jump to real first
-          const s = slider as HTMLDivElement;
-          s.style.transition = 'none';
-          const first = (s.children && s.children[0]) as HTMLElement | undefined;
-          const slideWidth = first?.clientWidth || Math.max(1, s.clientWidth / (slides.length + 2));
-          s.style.transform = `translateX(${ -1 * slideWidth }px)`;
-          visualIndexRef.current = 1;
-          setActiveIndex(0);
-          return;
-        }
-
-        // landed on cloned-last (visualIndex === 0)
-        if (visualIndexRef.current === 0) {
-          const s = slider as HTMLDivElement;
-          s.style.transition = 'none';
-          const first = (s.children && s.children[0]) as HTMLElement | undefined;
-          const slideWidth = first?.clientWidth || Math.max(1, s.clientWidth / (slides.length + 2));
-          s.style.transform = `translateX(${ -slides.length * slideWidth }px)`;
-          visualIndexRef.current = slides.length;
-          setActiveIndex(slides.length - 1);
-        }
-    }
-
-    slider.addEventListener('transitionend', onTransitionEnd);
-    return () => slider.removeEventListener('transitionend', onTransitionEnd);
-  }, [slides.length]);
+  
   return (
     <div className="min-h-screen bg-white text-black">
       {/* Interactive Carousel Hero (5 slides) */}
@@ -463,22 +350,8 @@ useEffect(() => {
               />
 
               <div className="relative h-full overflow-hidden">
-                <div
-                  ref={sliderRef}
-                  className="flex h-full will-change-transform"
-                  onPointerDown={(e) => onSwipeStart(e.clientX)}
-                  onPointerUp={(e) => onSwipeEnd(e.clientX)}
-                  onPointerCancel={(e) => onSwipeEnd(e.clientX)}
-                  onTouchStart={(e) => onSwipeStart(e.touches[0].clientX)}
-                  onTouchEnd={(e) => onSwipeEnd(e.changedTouches?.[0]?.clientX)}
-                  onTouchCancel={(e) => onSwipeEnd(e.changedTouches?.[0]?.clientX)}
-                  onClick={() => {
-                    setIsPaused(true);
-                    scheduleResume(2000);
-                    nextSlide();
-                  }}
-                  style={{ touchAction: 'pan-y' }}
-                >
+                <div ref={emblaRef} className="overflow-hidden w-full h-full" style={{ touchAction: 'pan-y' }}>
+                  <div className="flex h-full will-change-transform">
                   {extendedSlides.map((s, idx) => (
                     <div key={`${s.key}-${idx}`} className="flex-shrink-0 w-screen h-full">
                       <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 items-center h-full py-6 px-3 sm:px-4 md:py-12`}>
@@ -528,6 +401,7 @@ useEffect(() => {
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
               </div>
 
@@ -537,11 +411,11 @@ useEffect(() => {
                 onClick={() => {
                   setIsPaused(true);
                   scheduleResume(2000);
-                  prevSlide();
+                  try { emblaApi && emblaApi.scrollPrev(); } catch {}
                 }}
-                className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 z-30 bg-white/90 hover:bg-white text-slate-800 rounded-full p-2 sm:p-3 shadow-md flex items-center justify-center focus:outline-none transition-all hover:scale-110 min-w-[44px] min-h-[44px]"
+                className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-30 bg-white/30 hover:bg-white text-slate-800 rounded-full p-1.5 sm:p-3 shadow-md flex items-center justify-center focus:outline-none transition-all hover:scale-110 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px]"
               >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ChevronLeft className="w-3 h-3 sm:w-5 sm:h-5" />
               </button>
 
               <button
@@ -549,11 +423,11 @@ useEffect(() => {
                 onClick={() => {
                   setIsPaused(true);
                   scheduleResume(2000);
-                  nextSlide();
+                  try { emblaApi && emblaApi.scrollNext(); } catch {}
                 }}
-                className="absolute bottom-4 sm:bottom-6 right-4 sm:right-6 z-30 bg-white/90 hover:bg-white text-slate-800 rounded-full p-2 sm:p-3 shadow-md flex items-center justify-center focus:outline-none transition-all hover:scale-110 min-w-[44px] min-h-[44px]"
+                className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 z-30 bg-white/30 hover:bg-white text-slate-800 rounded-full p-1.5 sm:p-3 shadow-md flex items-center justify-center focus:outline-none transition-all hover:scale-110 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px]"
               >
-                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ChevronRight className="w-3 h-3 sm:w-5 sm:h-5" />
               </button>
 
               {/* Minimal pagination (dots only) */}
@@ -565,7 +439,7 @@ useEffect(() => {
                     onClick={() => {
                       setIsPaused(true);
                       scheduleResume(2000);
-                      goToVisual(idx + 1, true);
+                      try { emblaApi && emblaApi.scrollTo(idx); } catch {}
                     }}
                     className={`transition-all duration-350 ${
                       activeIndex === idx ? 'bg-slate-800 w-2 sm:w-3 h-2 sm:h-3 rounded-full' : 'bg-slate-400/40 w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full'
