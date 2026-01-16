@@ -1,5 +1,5 @@
 import { ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { PRODUCTS } from '../types';
 import ProductCard from '../components/ProductCard';
@@ -202,11 +202,9 @@ const slides = [
   // Autoplay (5s) with reduced-motion support
   const prefersReducedMotion = useRef(false);
   useEffect(() => {
-    try {
-      prefersReducedMotion.current = typeof window !== 'undefined' &&
-        window.matchMedia &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    } catch {}
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      prefersReducedMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
   }, []);
 
 
@@ -219,7 +217,7 @@ const slides = [
     el.scrollIntoView({ behavior: prefersReducedMotion.current ? 'auto' : 'smooth', block: 'start' });
   }
 
-  function handlePointerMove(e: any) {
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
     const el = document.getElementById('carousel');
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -255,7 +253,7 @@ const slides = [
     const tick = () => {
       if (prefersReducedMotion.current) return;
       if (isPaused || isDraggingRef.current) return;
-      try { emblaApi.scrollNext(); } catch {}
+      emblaApi?.scrollNext();
     };
     const timer = window.setInterval(tick, 7000);
     return () => clearInterval(timer);
@@ -277,7 +275,10 @@ const slides = [
     const onDragStart = () => {
       isDraggingRef.current = true;
       setIsPaused(true);
-      try { if (resumeTimeoutRef.current) { clearTimeout(resumeTimeoutRef.current); resumeTimeoutRef.current = null; } } catch {}
+      if (resumeTimeoutRef.current) {
+        clearTimeout(resumeTimeoutRef.current);
+        resumeTimeoutRef.current = null;
+      }
     };
 
     const onDragEnd = () => {
@@ -292,11 +293,11 @@ const slides = [
     onSelect();
 
     return () => {
-      try {
+      if (emblaApi) {
         emblaApi.off('select', onSelect);
         emblaApi.off('pointerDown', onDragStart);
         emblaApi.off('pointerUp', onDragEnd);
-      } catch {}
+      }
     };
   }, [emblaApi]);
 
@@ -411,7 +412,7 @@ const slides = [
                 onClick={() => {
                   setIsPaused(true);
                   scheduleResume(2000);
-                  try { emblaApi && emblaApi.scrollPrev(); } catch {}
+                  emblaApi?.scrollPrev();
                 }}
                 className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-30 bg-white/30 hover:bg-white text-slate-800 rounded-full p-1.5 sm:p-3 shadow-md flex items-center justify-center focus:outline-none transition-all hover:scale-110 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px]"
               >
@@ -423,7 +424,7 @@ const slides = [
                 onClick={() => {
                   setIsPaused(true);
                   scheduleResume(2000);
-                  try { emblaApi && emblaApi.scrollNext(); } catch {}
+                  emblaApi?.scrollNext();
                 }}
                 className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 z-30 bg-white/30 hover:bg-white text-slate-800 rounded-full p-1.5 sm:p-3 shadow-md flex items-center justify-center focus:outline-none transition-all hover:scale-110 min-w-[40px] min-h-[40px] sm:min-w-[44px] sm:min-h-[44px]"
               >
@@ -439,7 +440,7 @@ const slides = [
                     onClick={() => {
                       setIsPaused(true);
                       scheduleResume(2000);
-                      try { emblaApi && emblaApi.scrollTo(idx); } catch {}
+                      emblaApi?.scrollTo(idx);
                     }}
                     className={`transition-all duration-350 ${
                       activeIndex === idx ? 'bg-slate-800 w-2 sm:w-3 h-2 sm:h-3 rounded-full' : 'bg-slate-400/40 w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full'
